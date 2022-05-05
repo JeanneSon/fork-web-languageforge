@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from './utils/fixtures';
 import { SignupPage } from './pages/signup.page';
+import { ProjectsPage } from './pages/projects.page';
 
 test.describe('E2E Signup app', () => {
   const constants = require('./testConstants.json');
@@ -121,9 +122,15 @@ test.describe('E2E Signup app', () => {
     expect(signupPage.page.url()).toContain('/app/projects');
   });
 
-  test('Redirects to projects page if already logged in', async ({ memberTab }) => {
+  test('Redirects to projects page if already logged in @redirect', async ({ memberTab }) => {
     const signupPage = new SignupPage(memberTab);
     await signupPage.page.goto(SignupPage.url);
-    expect(signupPage.page.url()).toContain('/app/projects');
+
+    // without working with the frame, this test fails on Firefox
+    const frame = signupPage.page.mainFrame();
+    await frame.waitForURL(ProjectsPage.url);
+
+    await expect(signupPage.page).toHaveURL(ProjectsPage.url);
   });
+
 });

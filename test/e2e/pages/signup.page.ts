@@ -80,6 +80,7 @@ export class SignupPage {
       await this.page.goto(SignupPage.url + '#!/?e=' + encodeURIComponent(email));
       await this.page.reload();
     }
+    await this.page.waitForTimeout(5000);
     await expect(this.emailInput).toBeVisible();
   }
 

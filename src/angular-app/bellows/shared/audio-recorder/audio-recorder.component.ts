@@ -72,10 +72,9 @@ export class AudioRecorderController implements angular.IController {
             this.chunks = [];
             this.audioSrc = URL.createObjectURL(this.blob);
             // audio.src = audioURL;
-            this.audioFiles.push(this.dom.bypassSecurityTrustUrl(this.audioSrc));
+            this.audioFiles.push(this.audioSrc);
             console.log(this.audioSrc);
             console.log('recorder stopped');
-            this.cd.detectChanges();
           };
 
 

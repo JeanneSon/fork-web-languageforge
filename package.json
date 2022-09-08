@@ -23,7 +23,7 @@
     "url": "https://github.com/sillsdev/web-languageforge.git"
   },
   "dependencies": {
-    "@angular/core": "^14.2.0",
+    "@angular/core": "^14.2.1",
     "@angular/platform-browser": "^14.2.0",
     "angular": "1.8.2",
     "angular-route": "1.8.2",

@@ -76,7 +76,19 @@ export class SoundController implements angular.IController {
     this.playing = !this.playing;
 
     if (this.playing) {
-      this.audioElement.play();
+      var playPromise = this.audioElement.play();
+
+      if (playPromise !== undefined) {
+        playPromise.then(_ => {
+          // Automatic playback started!
+          // Show playing UI.
+          this.audioElement.pause();
+        })
+        .catch(error => {
+          // Auto-play was prevented
+          // Show paused UI.
+        });
+      }
     } else {
       this.audioElement.pause();
     }

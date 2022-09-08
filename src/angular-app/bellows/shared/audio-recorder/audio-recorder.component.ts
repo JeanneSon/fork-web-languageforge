@@ -6,12 +6,12 @@ declare var MediaRecorder: any;
 
 export class AudioRecorderController implements angular.IController {
 
-  static $inject = ['$interval'];
+  static $inject = ['$interval', '$scope'];
 
   mediaRecorder:any;
   chunks: any = [];
 	audioFiles: any = [];
-  constructor(private $interval: angular.IIntervalService, private cd: ChangeDetectorRef, private dom: DomSanitizer) {}
+  constructor(private $interval: angular.IIntervalService, private $scope: angular.IScope, private cd: ChangeDetectorRef, private dom: DomSanitizer) {}
 
   isRecording = false;
   hasRecorded = false;
@@ -22,7 +22,6 @@ export class AudioRecorderController implements angular.IController {
 
   errorMessage: string;
 
-  stopMediaStream: () => void;
   callback: (blob: Blob) => void;
 
   interval: angular.IPromise<void>;
@@ -57,56 +56,69 @@ export class AudioRecorderController implements angular.IController {
 
     navigator.mediaDevices.getUserMedia({audio: true}).then(stream => {
 
-      this.hasRecorded = true;
-      this.errorMessage = null;
-      this.isRecording = true;
+      this.$scope.$apply(() => {
+        this.hasRecorded = true;
+        this.errorMessage = null;
+        this.isRecording = true;
+      });
 
       const recordingStartTime = new Date();
 
       this.mediaRecorder = new MediaRecorder(stream);
-      //What to do when this.mediaRecorder.stop() is called in the future
+
+
+      //What to do in the future once the audio has been recorded
+      this.mediaRecorder.ondataavailable = (e: any) => {
+        this.chunks.push(e.data);
+      };
+
+
+      //What to do in the future when this.mediaRecorder.stop() is called
       this.mediaRecorder.onstop = () => {
         console.log('data available after MediaRecorder.stop() called.');
 
-        this.blob = new Blob(this.chunks, {type: 'audio/ogg; codecs=opus'});
-            this.chunks = [];
-            this.audioSrc = URL.createObjectURL(this.blob);
-            // audio.src = audioURL;
-            this.audioFiles.push(this.audioSrc);
-            console.log(this.audioSrc);
-            console.log('recorder stopped');
-          };
+        this.blob = new Blob(this.chunks, {type: 'audio/mp3'});
+        this.chunks = [];
+        this.audioSrc = window.URL.createObjectURL(this.blob);
+        // audio.src = audioURL;
+        this.audioFiles.push(this.audioSrc);
+        console.log(this.audioSrc);
+        console.log('recorder stopped');
 
+      };
 
       this.mediaRecorder.start();
+      console.log(this.mediaRecorder.state); //"recording"
+      console.log("recorder started");
 
       this.interval = this.$interval(() => {
         const seconds = Math.floor((new Date().getTime() - recordingStartTime.getTime()) / 1000);
         this.recordingTime = Math.floor(seconds / 60) + ':' + (seconds % 60 < 10 ? '0' : '') + seconds % 60;
       }, 1000);
 
-      this.stopMediaStream = () => {
-        stream.getAudioTracks()[0].stop();
-      };
-
     }, err => {
 
-      this.errorMessage = 'Unable to record audio from your microphone.';
-      this.isRecording = false;
-      this.hasRecorded = false;
-
+      this.$scope.$apply(() => {
+        this.errorMessage = 'Unable to record audio from your microphone.';
+        this.isRecording = false;
+        this.hasRecorded = false;
+      });
       console.error(err);
-    });
+
+      });
   }
 
 
   private stopRecording() {
-    if (this.interval) this.$interval.cancel(this.interval);
-    if (this.stopMediaStream) this.stopMediaStream();
+
     this.mediaRecorder.stop();
-    }
+    console.log(this.mediaRecorder.state); //"recording"
+    if (this.interval) this.$interval.cancel(this.interval);
+
 
   }
+
+}
 
 export const AudioRecorderComponent: angular.IComponentOptions = {
   bindings: {

@@ -23,24 +23,31 @@ export class AudioRecorderController implements angular.IController {
 
   private startRecording() {
 
+    this.recordingTime = '0:00';
+
     //getUserMedia
-    navigator.mediaDevices.getUserMedia({audio: true}).then(stream => {
+    navigator.mediaDevices.getUserMedia({audio: true})
+    .then(stream => {
 
       console.log(stream);
 
       this.mediaRecorder = new MediaRecorder(stream);
-      this.mediaRecorder.ondataavailable = (e: any) => {
 
-        this.hasRecorded = true;
-        this.errorMessage = null;
-        this.isRecording = true;
+      this.hasRecorded = true;
+      this.errorMessage = null;
+      this.isRecording = true;
+
+      this.mediaRecorder.ondataavailable = (e: any) => {
 
         this.chunks.push(e.data);
       };
+
+      const recordingStartTime = new Date();
+
       this.mediaRecorder.onstop = () => {
         console.log('data available after MediaRecorder.stop() called.');
 
-        this.blob = new Blob(this.chunks, {type: 'audio/mp3'});
+        this.blob = new Blob(this.chunks, {type: 'audio/webm'});
         this.chunks = [];
         this.audioSrc = window.URL.createObjectURL(this.blob);
 
@@ -48,8 +55,18 @@ export class AudioRecorderController implements angular.IController {
         console.log('recorder stopped');
       };
 
+      this.interval = this.$interval(() => {
+        const seconds = Math.floor((new Date().getTime() - recordingStartTime.getTime()) / 1000);
+        this.recordingTime = Math.floor(seconds / 60) + ':' + (seconds % 60 < 10 ? '0' : '') + seconds % 60;
+      }, 1000);
+
+
+      this.mediaRecorder.start();
+      console.log(this.mediaRecorder.state); //"recording"
+      console.log("recorder started");
+
+
     }, err => {
-      console.log("Hit err; executing $scope.$apply");
 
       this.errorMessage = 'Unable to record audio from your microphone.';
       this.isRecording = false;
@@ -59,18 +76,6 @@ export class AudioRecorderController implements angular.IController {
 
       });//END getUserMedia call
 
-
-
-    this.recordingTime = '0:00';
-    const recordingStartTime = new Date();
-    this.mediaRecorder.start();
-
-    console.log(this.mediaRecorder.state); //"recording"
-    console.log("recorder started");
-    this.interval = this.$interval(() => {
-      const seconds = Math.floor((new Date().getTime() - recordingStartTime.getTime()) / 1000);
-      this.recordingTime = Math.floor(seconds / 60) + ':' + (seconds % 60 < 10 ? '0' : '') + seconds % 60;
-    }, 1000);
 
   }
 
@@ -87,6 +92,7 @@ export class AudioRecorderController implements angular.IController {
     if (this.isRecording) this.stopRecording();
     else this.startRecording();
     this.isRecording = !this.isRecording;
+    console.log("Now recording: " + this.isRecording); //true or false
   }
 
   close() {

@@ -1,9 +1,12 @@
 import * as angular from 'angular';
+import { metadata } from 'core-js/fn/reflect';
 
 export class SoundController implements angular.IController {
   puiUrl: string;
 
   audioElement = document.createElement('audio');
+
+
   playing = false;
 
   private isUserMovingSlider: boolean = false;
@@ -26,6 +29,7 @@ export class SoundController implements angular.IController {
     });
 
     this.audioElement.addEventListener('loadedmetadata', () => {
+      console.log("audio metadata loaded; audio duration: " + this.duration());
       this.$scope.$digest();
     });
 
@@ -74,6 +78,13 @@ export class SoundController implements angular.IController {
 
   togglePlayback(): void {
     this.playing = !this.playing;
+    console.log("Sound-player this.playing: " + this.playing);
+
+    // if (this.playing) {
+    //   this.audioElement.play();
+    // } else {
+    //   this.audioElement.pause();
+    // }
 
     if (this.playing) {
       var playPromise = this.audioElement.play();

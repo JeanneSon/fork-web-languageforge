@@ -96,7 +96,10 @@ export class AudioRecorderController implements angular.IController {
   }
 
   close() {
-    this.stopRecording();
+    console.log("calling audio-recorder close()");
+    if (this.isRecording){
+      this.stopRecording();
+    }
     this.callback(null);
   }
 
@@ -110,7 +113,10 @@ export class AudioRecorderController implements angular.IController {
   }
 
   $onDestroy() {
-    this.stopRecording();
+    console.log("Calling $onDestroy");
+    if(this.isRecording){
+      this.stopRecording();
+    }
   }
 
 }

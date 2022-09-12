@@ -1,11 +1,11 @@
 import * as angular from 'angular';
-import { metadata } from 'core-js/fn/reflect';
+import { timeStamp } from 'console';
+import { isThisISOWeek } from 'date-fns';
 
 export class SoundController implements angular.IController {
   puiUrl: string;
 
   audioElement = document.createElement('audio');
-
 
   playing = false;
 
@@ -65,44 +65,67 @@ export class SoundController implements angular.IController {
       }
 
       this.audioElement.src = urlChange.currentValue;
+      console.log("audioElement src: " + this.audioElement.src);
     }
   }
 
   $onDestroy(): void {
-    this.audioElement.pause();
+    if (!this.audioElement.paused){
+      this.audioElement.pause();
+    }
   }
 
   iconClass(): string {
     return this.playing ? 'fa-pause' : 'fa-play';
   }
 
+
+  async playAudio() {
+    try{
+      await new Promise (r => setTimeout(r, 900)); //to load in the audio
+      return this.audioElement.play();
+    } catch (e) {
+
+    }
+  }
+
   togglePlayback(): void {
     this.playing = !this.playing;
     console.log("Sound-player this.playing: " + this.playing);
 
+    if (this.playing) {
+      this.playAudio();
+    } else {
+      if(!this.audioElement.paused){
+        this.audioElement.pause();
+      }
+    }
+
     // if (this.playing) {
-    //   this.audioElement.play();
+    //   try{
+    //     var playPromise = this.audioElement.play();
+    //   }
+    //   catch(e){
+
+    //       console.log("Caught error while creating playPromise: " + e.message);
+    //   }
+
+
+    //   if (playPromise !== undefined && this.audioElement.HAVE_ENOUGH_DATA) {
+    //     playPromise.then(_ => {
+    //       // Automatic playback started!
+    //       // Show playing UI.
+    //       this.audioElement.pause();
+    //     })
+    //     .catch(error => {
+    //       // Auto-play was prevented
+    //       // Show paused UI.
+    //       console.log("Caught error while trying to play and pause: " + error.message);
+    //     });
+    //   }
     // } else {
     //   this.audioElement.pause();
     // }
-
-    if (this.playing) {
-      var playPromise = this.audioElement.play();
-
-      if (playPromise !== undefined) {
-        playPromise.then(_ => {
-          // Automatic playback started!
-          // Show playing UI.
-          this.audioElement.pause();
-        })
-        .catch(error => {
-          // Auto-play was prevented
-          // Show paused UI.
-        });
-      }
-    } else {
-      this.audioElement.pause();
-    }
   }
 
   currentTimeInSeconds(): number {
@@ -110,11 +133,23 @@ export class SoundController implements angular.IController {
   }
 
   durationInSeconds(): number {
-    return this.audioElement.duration;
+    if(this.audioElement.duration !== NaN){
+      return this.audioElement.duration;
+    }
+    else {
+      return 0;
+    }
+
   }
 
   duration(): string {
-    return SoundController.formatTimestamp(this.audioElement.duration * 1000);
+    if(this.audioElement.duration !== NaN){
+      return SoundController.formatTimestamp(this.audioElement.duration * 1000);
+    }
+    else{
+      return "Loading";
+    }
+
   }
 
   currentTime(): string {

@@ -35,6 +35,7 @@ export class NewLexProjectPage {
   readonly backButton: Locator;
   readonly nextButton: Locator;
   readonly formStatus: Locator;
+  readonly progressIndicatorStep3Label: Locator;
 
   // step 0: chooser
   readonly chooserPage: ChooserPage;
@@ -45,6 +46,9 @@ export class NewLexProjectPage {
   // step 1: send receive credentials
   readonly srCredentialsPage: SrCredentialsPage;
 
+  // step 2: initial data
+  readonly initialDataPageBrowseButton: Locator;
+
   static readonly url: string = '/app/lexicon/new-project';
 
   constructor(page: Page) {
@@ -53,6 +57,7 @@ export class NewLexProjectPage {
     this.backButton = page.locator('#back-button');
     this.nextButton = page.locator('#next-button');
     this.formStatus = page.locator('#form-status');
+    this.progressIndicatorStep3Label = page.locator('#progress-indicator-step3-label');
 
     this.chooserPage = {
       sendReceiveButton: page.locator('#send-receive-button'),
@@ -78,6 +83,8 @@ export class NewLexProjectPage {
       projectOk: page.locator('#project-ok'),
       projectSelect: page.locator('#sr-project-select')
     };
+
+    this.initialDataPageBrowseButton = page.locator('#browse-button');
   };
 
 
@@ -92,6 +99,14 @@ export class NewLexProjectPage {
 
   async expectFormStatusHasError() {
     await expect(this.formStatus).toHaveClass(/alert-danger/);
+  }
+
+  async expectFormIsValid() {
+    await expect(this.nextButton).toHaveClass(/btn-primary(?:\s|$)/);
+  }
+
+  async expectFormIsNotValid() {
+    await expect(this.nextButton).not.toHaveClass(/btn-primary(?:\s|$)/);
   }
 
   // formStatus = {

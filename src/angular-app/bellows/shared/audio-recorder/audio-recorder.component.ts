@@ -33,25 +33,26 @@ export class AudioRecorderController implements angular.IController {
 
       this.mediaRecorder = new MediaRecorder(stream);
 
-      this.hasRecorded = true;
-      this.errorMessage = null;
-      this.isRecording = true;
+      this.$scope.$apply(() => {
+        this.hasRecorded = true;
+        this.errorMessage = null;
+        this.isRecording = true;
+      });
 
       this.mediaRecorder.ondataavailable = (e: any) => {
-
+        console.log('data available.');
         this.chunks.push(e.data);
+        this.blob = new Blob(this.chunks, {type: 'audio/ogg; codecs=opus'});
+        this.chunks = [];
+        this.audioSrc = window.URL.createObjectURL(this.blob);
+
+        console.log(this.audioSrc);
       };
 
       const recordingStartTime = new Date();
 
       this.mediaRecorder.onstop = () => {
-        console.log('data available after MediaRecorder.stop() called.');
 
-        this.blob = new Blob(this.chunks, {type: 'audio/webm'});
-        this.chunks = [];
-        this.audioSrc = window.URL.createObjectURL(this.blob);
-
-        console.log(this.audioSrc);
         console.log('recorder stopped');
       };
 
@@ -68,9 +69,11 @@ export class AudioRecorderController implements angular.IController {
 
     }, err => {
 
-      this.errorMessage = 'Unable to record audio from your microphone.';
-      this.isRecording = false;
-      this.hasRecorded = false;
+      this.$scope.$apply(() => {
+        this.errorMessage = 'Unable to record audio from your microphone.';
+        this.isRecording = false;
+        this.hasRecorded = false;
+      });
 
       console.error(err);
 

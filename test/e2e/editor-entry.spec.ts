@@ -47,7 +47,7 @@ test.describe('Lexicon E2E Entry Editor and Entries List', () => {
     });
 
     test('Entries list has correct number of entries', async () => {
-      expect(await editorPageManager.entriesListPage.getTotalNumberOfEntries()).toEqual(lexEntriesIds.length.toString());
+      await editorPageManager.entriesListPage.expectTotalNumberOfEntries(lexEntriesIds.length);
     });
 
     test('Search function works correctly', async () => {
@@ -546,7 +546,7 @@ test.describe('Lexicon E2E Entry Editor and Entries List', () => {
           await expect(editorPageManager.compactEntryListItem).toHaveCount(entryCount);
 
           await editorPageManager.entriesListPage.goto();
-          expect(await editorPageManager.entriesListPage.getTotalNumberOfEntries()).toEqual(entryCount.toString());
+          await editorPageManager.entriesListPage.expectTotalNumberOfEntries(entryCount);
 
           // go back to editor
           await editorPageManager.page.goBack();
@@ -584,7 +584,7 @@ test.describe('Lexicon E2E Entry Editor and Entries List', () => {
           await editorPageManager.entriesListPage.filterInputClearButton.click();
 
           // word count is still correct in browse page
-          expect(await editorPageManager.entriesListPage.getTotalNumberOfEntries()).toEqual(entryCount.toString());
+          await editorPageManager.entriesListPage.expectTotalNumberOfEntries(entryCount);
 
           // remove new word to restore original word count
           await editorPageManager.entriesListPage.clickOnEntry(constants.testEntry3.lexeme.th.value);

@@ -3,8 +3,8 @@
 </a>
 <span class="controls">
     <span id="audio-progress" data-ng-if="$ctrl.audioElement.duration" class="audio-progress text-muted">
-        {{$ctrl.currentTime()}} / {{$ctrl.duration()}}
+        {{$ctrl.currentTime()}} {{$ctrl.duration()}}
     </span>
     <!--suppress HtmlFormInputWithoutLabel -->
-    <input class="seek-slider" type="range" min="0" max="{{$ctrl.audioElement.duration}}" step="0.25" value="0">
+    <input class="seek-slider" type="range" min="0" max="{{$ctrl.audioElement.duration}}" step="0.1" value="0">
 </span>

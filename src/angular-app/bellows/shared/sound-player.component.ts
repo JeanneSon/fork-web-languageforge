@@ -28,9 +28,9 @@ export class SoundController implements angular.IController {
       });
     });
 
-    this.audioElement.addEventListener('durationChange', () => {
+    this.audioElement.addEventListener('durationchange', () => {
       this.$scope.$digest();
-      console.log("audio durationChange; audio duration: " + this.duration());
+      console.log("audio durationchange; audio duration: " + this.duration());
     });
 
     const previousFormattedTime: string = null;
@@ -122,10 +122,10 @@ export class SoundController implements angular.IController {
 
   duration(): string {
     if(this.audioElement.duration !== Infinity){
-      return SoundController.formatTimestamp(this.audioElement.duration * 1000);
+      return "/ " + SoundController.formatTimestamp(this.audioElement.duration * 1000);
     }
     else{
-      return "Loading";
+      return "";
     }
 
   }

@@ -55,7 +55,6 @@ class LexUploadCommands
 
             // allow m4a audio uploads, which curiously has a mime type of video/mp4
             "video/mp4",
-
             "audio/mpeg",
             "audio/x-mpeg",
             "audio/mp3",
@@ -66,17 +65,24 @@ class LexUploadCommands
             "audio/x-mpg",
             "audio/x-mpegaudio",
             "audio/x-wav",
-            "audio/wav"
+            "audio/wav",
+            "audio/ogg",
+            "audio/webm"
         );
         $allowedExtensions = array(
             ".mp3",
             ".mpa",
             ".mpg",
             ".m4a",
-            ".wav"
+            ".wav",
+            ".ogg",
+            ".webm"
         );
 
         $response = new UploadResponse();
+        console.log("fileType: " + $fileType);
+        console.log("fileExt: " + $fileExtension);
+        
         if (in_array(strtolower($fileType), $allowedTypes) && in_array(strtolower($fileExt), $allowedExtensions)) {
 
             // make the folders if they don't exist

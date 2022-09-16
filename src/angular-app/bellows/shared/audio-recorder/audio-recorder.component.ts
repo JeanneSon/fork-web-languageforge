@@ -39,15 +39,16 @@ export class AudioRecorderController implements angular.IController {
         this.isRecording = true;
       });
 
-      this.mediaRecorder.ondataavailable = (e: any) => {
+      this.mediaRecorder.addEventListener('dataavailable', (e: { data: any; }) => {
         console.log('data available.');
         this.chunks.push(e.data);
         this.blob = new Blob(this.chunks, {type: 'audio/ogg; codecs=opus'});
         this.chunks = [];
         this.audioSrc = window.URL.createObjectURL(this.blob);
+        this.$scope.$digest();
 
-        console.log(this.audioSrc);
-      };
+        console.log("this.audioSrc: " + this.audioSrc);
+      });
 
       const recordingStartTime = new Date();
 
@@ -86,7 +87,7 @@ export class AudioRecorderController implements angular.IController {
 
     this.mediaRecorder.stop();
 
-    console.log(this.mediaRecorder.state); //"recording"
+    console.log(this.mediaRecorder.state); //"inactive"
     if (this.interval) this.$interval.cancel(this.interval);
 
   }
@@ -95,7 +96,6 @@ export class AudioRecorderController implements angular.IController {
     if (this.isRecording) this.stopRecording();
     else this.startRecording();
     this.isRecording = !this.isRecording;
-    console.log("Now recording: " + this.isRecording); //true or false
   }
 
   close() {

@@ -1,6 +1,4 @@
 import * as angular from 'angular';
-import { timeStamp } from 'console';
-import { isThisISOWeek } from 'date-fns';
 
 export class SoundController implements angular.IController {
   puiUrl: string;
@@ -13,9 +11,12 @@ export class SoundController implements angular.IController {
   private slider: HTMLInputElement;
 
   static $inject = ['$scope', '$element'];
-  constructor(private $scope: angular.IScope, private $element: angular.IRootElementService) { }
+
+  constructor(private $scope: angular.IScope, private $element: angular.IRootElementService) {}
 
   $onInit(): void {
+
+
     this.slider = this.$element.find('.seek-slider').get(0) as HTMLInputElement;
 
     this.audioElement.addEventListener('ended', () => {
@@ -24,13 +25,12 @@ export class SoundController implements angular.IController {
           this.togglePlayback();
         }
 
-        this.audioElement.currentTime = 0;
       });
     });
 
-    this.audioElement.addEventListener('loadedmetadata', () => {
-      console.log("audio metadata loaded; audio duration: " + this.duration());
+    this.audioElement.addEventListener('durationChange', () => {
       this.$scope.$digest();
+      console.log("audio durationChange; audio duration: " + this.duration());
     });
 
     const previousFormattedTime: string = null;
@@ -58,12 +58,14 @@ export class SoundController implements angular.IController {
   }
 
   $onChanges(changes: angular.IOnChangesObject): void {
+    console.log("onChanges called");
     const urlChange = changes.puiUrl as angular.IChangesObject<string>;
     if (urlChange != null && urlChange.currentValue) {
       if (this.playing) {
         this.togglePlayback();
       }
 
+      this.audioElement.load();
       this.audioElement.src = urlChange.currentValue;
       console.log("audioElement src: " + this.audioElement.src);
     }
@@ -82,8 +84,8 @@ export class SoundController implements angular.IController {
 
   async playAudio() {
     try{
-      await new Promise (r => setTimeout(r, 900)); //to load in the audio
-      return this.audioElement.play();
+      let loadedAudioPlayer = await this.audioElement.play();
+      return loadedAudioPlayer;
     } catch (e) {
 
     }
@@ -94,6 +96,7 @@ export class SoundController implements angular.IController {
     console.log("Sound-player this.playing: " + this.playing);
 
     if (this.playing) {
+      this.audioElement.currentTime = 0;
       this.playAudio();
     } else {
       if(!this.audioElement.paused){
@@ -101,31 +104,6 @@ export class SoundController implements angular.IController {
       }
     }
 
-    // if (this.playing) {
-    //   try{
-    //     var playPromise = this.audioElement.play();
-    //   }
-    //   catch(e){
-
-    //       console.log("Caught error while creating playPromise: " + e.message);
-    //   }
-
-
-    //   if (playPromise !== undefined && this.audioElement.HAVE_ENOUGH_DATA) {
-    //     playPromise.then(_ => {
-    //       // Automatic playback started!
-    //       // Show playing UI.
-    //       this.audioElement.pause();
-    //     })
-    //     .catch(error => {
-    //       // Auto-play was prevented
-    //       // Show paused UI.
-    //       console.log("Caught error while trying to play and pause: " + error.message);
-    //     });
-    //   }
-    // } else {
-    //   this.audioElement.pause();
-    // }
   }
 
   currentTimeInSeconds(): number {
@@ -143,7 +121,7 @@ export class SoundController implements angular.IController {
   }
 
   duration(): string {
-    if(this.audioElement.duration !== NaN){
+    if(this.audioElement.duration !== Infinity){
       return SoundController.formatTimestamp(this.audioElement.duration * 1000);
     }
     else{

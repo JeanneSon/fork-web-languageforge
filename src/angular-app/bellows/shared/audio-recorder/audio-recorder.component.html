@@ -3,7 +3,7 @@
 </div>
 <div class="record-area" ng-if="$ctrl.recordingSupported()">
   <a class="record-button" ng-click="$ctrl.toggleRecording()">
-    <span class="fa fa-microphone"></span>
+    <span class="fa fa-microphone" data-ng-click=""></span>
     <span ng-show="!$ctrl.isRecording" class="record-text">{{$ctrl.hasRecorded ? 'Record again' : 'Record'}}</span>
     <span ng-show="$ctrl.isRecording" class="recording-time">{{$ctrl.recordingTime}}</span>
   </a>

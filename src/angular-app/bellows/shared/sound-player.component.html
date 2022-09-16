@@ -6,5 +6,5 @@
         {{$ctrl.currentTime()}} / {{$ctrl.duration()}}
     </span>
     <!--suppress HtmlFormInputWithoutLabel -->
-    <input class="seek-slider" type="range" min="0" max="{{$ctrl.durationInSeconds()}}" value="0">
+    <input class="seek-slider" type="range" min="0" max="{{$ctrl.audioElement.duration}}" step="0.25" value="0">
 </span>

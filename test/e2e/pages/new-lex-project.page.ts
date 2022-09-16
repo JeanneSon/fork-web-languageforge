@@ -25,7 +25,20 @@ type SrCredentialsPage = {
   projectNoAccess: Locator,
   projectOk: Locator
   projectSelect: Locator
-}
+};
+
+type VerifyDataPage = {
+  title: Locator,
+  nonCriticalErrorsButton: Locator,
+  entriesImported: Locator,
+  importErrors: Locator,
+};
+
+type SelectLanguageModal = {
+  searchLanguageInput: Locator,
+  languageRows: Locator,
+  addButton: Locator,
+};
 
 export class NewLexProjectPage {
   readonly page: Page;
@@ -49,6 +62,22 @@ export class NewLexProjectPage {
   // step 2: initial data
   readonly initialDataPageBrowseButton: Locator;
 
+  // step 3: verify data
+  readonly verifyDataPage: VerifyDataPage;
+
+  // step 3 alternate: primary language
+  readonly primaryLanguagePageSelectButton: Locator;
+  // select language modal
+  readonly selectLanguage: SelectLanguageModal;
+  // primaryLanguagePage = {
+  //   selectButton: element(by.id('select-language-button')),
+  //   // tslint:disable-next-line:max-line-length
+  //   // see http://stackoverflow.com/questions/25553057/making-protractor-wait-until-a-ui-boostrap-modal-box-has-disappeared-with-cucum
+  //   async selectButtonClick() {
+  //     await element(by.id('select-language-button')).click();
+  //     return browser.executeScript('$(\'.modal\').removeClass(\'fade\');');
+  //   }
+  // };
   static readonly url: string = '/app/lexicon/new-project';
 
   constructor(page: Page) {
@@ -83,8 +112,19 @@ export class NewLexProjectPage {
       projectOk: page.locator('#project-ok'),
       projectSelect: page.locator('#sr-project-select')
     };
-
     this.initialDataPageBrowseButton = page.locator('#browse-button');
+    this.verifyDataPage = {
+      title: page.locator('#new-project-verify'),
+      nonCriticalErrorsButton: page.locator('#non-critical-errors-button'),
+      entriesImported: page.locator('#entries-imported'),
+      importErrors: page.locator('#import-errors'),
+    };
+    this.primaryLanguagePageSelectButton = page.locator('#select-language-button');
+    this.selectLanguage = {
+      searchLanguageInput: page.locator('.modal-body >> #search-text-input'),
+      languageRows: page.locator('.modal-body >> [data-ng-repeat*="language in $ctrl.languages"]'),
+      addButton: page.locator('.modal-footer >> #select-language-add-btn'),
+    };
   };
 
 
@@ -94,7 +134,10 @@ export class NewLexProjectPage {
   }
 
   async expectFormStatusHasNoError() {
-    await expect(this.formStatus).not.toHaveClass(/alert-danger/);
+    // this expect was flaky; suspicion: await and retry do not work properly with the "not" negation
+    // await expect(this.formStatus).not.toHaveClass(/alert-danger/);
+    // this regular expression finds everything not containing "alert-danger"
+    await expect(this.formStatus).toHaveClass(/^((?!alert-danger).)*$/);
   }
 
   async expectFormStatusHasError() {
@@ -109,14 +152,4 @@ export class NewLexProjectPage {
     await expect(this.nextButton).not.toHaveClass(/btn-primary(?:\s|$)/);
   }
 
-  // formStatus = {
-  //   async expectHasNoError() {
-  //     expect(await element(by.id('form-status')).getAttribute('class')).not.toContain('alert-danger');
-  //   },
-  //   async expectContainsError(partialMsg: string) {
-  //     if (!partialMsg) partialMsg = '';
-  //     expect(await element(by.id('form-status')).getAttribute('class')).toContain('alert-danger');
-  //     expect(await element(by.id('form-status')).getText()).toContain(partialMsg);
-  //   }
-  // };
 }

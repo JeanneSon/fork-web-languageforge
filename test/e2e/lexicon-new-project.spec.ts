@@ -1,15 +1,14 @@
 import { expect } from '@playwright/test';
 import { test } from './utils/fixtures';
 
-import { LoginPage } from './pages/login.page';
-import { ProjectsPage } from './pages/projects.page';
 import { NewLexProjectPage } from './pages/new-lex-project.page';
-import { MockUploadElement } from './components/mock-upload.component';
+import { EntriesListPage } from './pages/entries-list.page';
 
 import { Project } from './utils/types';
 
 import { initTestProject } from './utils/testSetup';
 import constants from './testConstants.json';
+import { NoticeElement } from './components/notice.component';
 
 // import {browser, ExpectedConditions, Key} from 'protractor';
 
@@ -33,6 +32,11 @@ test.describe('Lexicon E2E New Project wizard app', () => {
     code: 'lexicon-new-project_spec_ts_new_project_1', // code as it is generated based on the project name
     id: ''
   };
+  const newProject02: Project = {
+    name: 'lexicon-new-project_spec_ts New Project 2',
+    code: 'lexicon-new-project_spec_ts_new_project_2', // code as it is generated based on the project name
+    id: ''
+  }
 
   test.beforeAll(async ({ adminTab, managerTab, memberTab, request, manager, member }) => {
     newLexProjectPageAdmin = new NewLexProjectPage(adminTab);
@@ -124,6 +128,8 @@ test.describe('Lexicon E2E New Project wizard app', () => {
       // passwordInvalid is, incredibly, an invalid password.
       // It's valid only in the sense that it follows the password rules
       await newLexProjectPageMember.srCredentialsPage.passwordInput.fill(constants.passwordValid);
+      // tab should trigger validation of the password thus making the test less flaky
+      await newLexProjectPageMember.srCredentialsPage.passwordInput.press('Tab');
       await expect(newLexProjectPageMember.srCredentialsPage.credentialsInvalid).toBeVisible();
       await newLexProjectPageMember.expectFormStatusHasNoError();
       await newLexProjectPageMember.nextButton.click();
@@ -165,6 +171,8 @@ test.describe('Lexicon E2E New Project wizard app', () => {
 
     // TODO: when it is clear how SendReceive and Playwright will work together, test and activate this test
     test.skip('can move on when the credentials are valid', async () => {
+      // TODO: find out why the following credentials (copied from protractor) are invalid
+      await newLexProjectPageMember.srCredentialsPage.loginInput.fill(constants.srUsername);
       await newLexProjectPageMember.srCredentialsPage.passwordInput.fill(constants.srPassword);
       await expect(newLexProjectPageMember.srCredentialsPage.loginOk).toBeVisible();
       await expect(newLexProjectPageMember.srCredentialsPage.passwordOk).toBeVisible();
@@ -196,412 +204,471 @@ test.describe('Lexicon E2E New Project wizard app', () => {
       await page.expectFormIsValid();
     });
 
+    */
   });
-  */
-    test.describe('Send Receive Verify page', () => {
-      /*
-      // TODO: when it is clear how SendReceive and Playwright will work together, test and activate this test; make sure to put navigation
-      test('Can clone project', async () => {
-        await newLexProjectPageMember.nextButton.click();
-        await browser.wait(ExpectedConditions.visibilityOf(page.srClonePage.cloning), constants.conditionTimeout);
-         expect<any>(await page.srClonePage.cloning.isDisplayed()).toBe(true);
-       });
+  test.describe('Send Receive Verify page', () => {
+    /*
+    // TODO: when it is clear how SendReceive and Playwright will work together, test and activate this test; make sure to put navigation
+    test('Can clone project', async () => {
+      await newLexProjectPageMember.nextButton.click();
+      await browser.wait(ExpectedConditions.visibilityOf(page.srClonePage.cloning), constants.conditionTimeout);
+       expect<any>(await page.srClonePage.cloning.isDisplayed()).toBe(true);
+     });
 
-       test('cannot move on while cloning', async () => {
-         expect<any>(await page.nextButton.isDisplayed()).toBe(false);
-         expect<any>(await page.nextButton.isEnabled()).toBe(false);
-         await page.expectFormIsNotValid();
-       });
-       */
+     test('cannot move on while cloning', async () => {
+       expect<any>(await page.nextButton.isDisplayed()).toBe(false);
+       expect<any>(await page.nextButton.isEnabled()).toBe(false);
+       await page.expectFormIsNotValid();
+     });
+     */
 
+  });
+
+  test.describe('New Project Name page', () => {
+    test.beforeEach(async () => {
+      await newLexProjectPageMember.goto();
+      await newLexProjectPageMember.chooserPage.createButton.click();
     });
 
-    test.describe('New Project Name page', () => {
+    test('Can create a new project', async () => {
+      await expect(newLexProjectPageMember.namePage.projectNameInput).toBeVisible();
+    });
+
+    test('Cannot move on if name is invalid', async () => {
+      await expect(newLexProjectPageMember.nextButton).toBeEnabled();
+      await newLexProjectPageMember.nextButton.click();
+      await expect(newLexProjectPageMember.namePage.projectNameInput).toBeVisible();
+      await newLexProjectPageMember.expectFormStatusHasError();
+      await expect(newLexProjectPageMember.formStatus).toContainText('Project Name cannot be empty.');
+    });
+
+    test('Finds the test project already exists', async () => {
+      await newLexProjectPageMember.namePage.projectNameInput.fill(existingProject.code);
+      await newLexProjectPageMember.namePage.projectNameInput.press('Tab');
+      await expect(newLexProjectPageMember.namePage.projectCodeExists).toBeVisible();
+      await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
+      await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
+      expect(await newLexProjectPageMember.namePage.projectCodeInput.inputValue()).toEqual(existingProject.code);
+      await newLexProjectPageMember.expectFormStatusHasError();
+      await expect(newLexProjectPageMember.formStatus).toContainText(
+        'Another project with code \'' + existingProject.code +
+        '\' already exists.');
+    });
+
+    test('With a cleared name does not show an error but is still invalid', async () => {
+      await newLexProjectPageMember.namePage.projectNameInput.fill('');
+      await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+      await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
+      await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
+      await newLexProjectPageMember.expectFormStatusHasNoError();
+      await expect(newLexProjectPageMember.nextButton).toBeEnabled();
+      await newLexProjectPageMember.nextButton.click();
+      await expect(newLexProjectPageMember.namePage.projectNameInput).toBeVisible();
+      await newLexProjectPageMember.expectFormStatusHasError();
+      await expect(newLexProjectPageMember.formStatus).toContainText('Project Name cannot be empty.');
+    });
+
+    test('Can verify that an unused project name is available', async () => {
+      await newLexProjectPageMember.namePage.projectNameInput.fill(newProject01.name);
+      await newLexProjectPageMember.namePage.projectNameInput.press('Tab');
+      await expect(newLexProjectPageMember.namePage.projectCodeOk).toBeVisible();
+      await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+      await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
+      expect(await newLexProjectPageMember.namePage.projectCodeInput.inputValue()).toEqual(newProject01.code);
+      await newLexProjectPageMember.expectFormStatusHasNoError();
+    });
+
+    test.describe('Project Code tests', () => {
       test.beforeEach(async () => {
-        await newLexProjectPageMember.goto();
-        await newLexProjectPageMember.chooserPage.createButton.click();
-      });
-
-      test('Can create a new project', async () => {
-        await expect(newLexProjectPageMember.namePage.projectNameInput).toBeVisible();
-      });
-
-      test('Cannot move on if name is invalid', async () => {
-        await expect(newLexProjectPageMember.nextButton).toBeEnabled();
-        await newLexProjectPageMember.nextButton.click();
-        await expect(newLexProjectPageMember.namePage.projectNameInput).toBeVisible();
-        await newLexProjectPageMember.expectFormStatusHasError();
-        await expect(newLexProjectPageMember.formStatus).toContainText('Project Name cannot be empty.');
-      });
-
-      test('Finds the test project already exists', async () => {
-        await newLexProjectPageMember.namePage.projectNameInput.fill(existingProject.code);
-        await newLexProjectPageMember.namePage.projectNameInput.press('Tab');
-        await expect(newLexProjectPageMember.namePage.projectCodeExists).toBeVisible();
-        await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
-        await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
-        expect(await newLexProjectPageMember.namePage.projectCodeInput.inputValue()).toEqual(existingProject.code);
-        await newLexProjectPageMember.expectFormStatusHasError();
-        await expect(newLexProjectPageMember.formStatus).toContainText(
-          'Another project with code \'' + existingProject.code +
-          '\' already exists.');
-      });
-
-      test('With a cleared name does not show an error but is still invalid', async () => {
-        await newLexProjectPageMember.namePage.projectNameInput.fill('');
-        await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
-        await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
-        await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
-        await newLexProjectPageMember.expectFormStatusHasNoError();
-        await expect(newLexProjectPageMember.nextButton).toBeEnabled();
-        await newLexProjectPageMember.nextButton.click();
-        await expect(newLexProjectPageMember.namePage.projectNameInput).toBeVisible();
-        await newLexProjectPageMember.expectFormStatusHasError();
-        await expect(newLexProjectPageMember.formStatus).toContainText('Project Name cannot be empty.');
-      });
-
-      test('Can verify that an unused project name is available', async () => {
         await newLexProjectPageMember.namePage.projectNameInput.fill(newProject01.name);
-        await newLexProjectPageMember.namePage.projectNameInput.press('Tab');
-        await expect(newLexProjectPageMember.namePage.projectCodeOk).toBeVisible();
-        await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
-        await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
-        expect(await newLexProjectPageMember.namePage.projectCodeInput.inputValue()).toEqual(newProject01.code);
-        await newLexProjectPageMember.expectFormStatusHasNoError();
       });
 
-      test.describe('Project Code tests', () => {
+      test('Cannot edit project code by default', async () => {
+        await expect(newLexProjectPageMember.namePage.projectCodeInput).not.toBeVisible();
+      });
+
+      test.describe('Edit Project Code', () => {
         test.beforeEach(async () => {
-          await newLexProjectPageMember.namePage.projectNameInput.fill(newProject01.name);
+          await expect(newLexProjectPageMember.namePage.editProjectCodeCheckbox).toBeVisible();
+          await newLexProjectPageMember.namePage.editProjectCodeCheckbox.check();
         });
 
-        test('Cannot edit project code by default', async () => {
+        test('Can edit project code when enabled', async () => {
+          await expect(newLexProjectPageMember.namePage.projectCodeInput).toBeVisible();
+          await newLexProjectPageMember.namePage.projectCodeInput.fill('changed_new_project');
+          await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
+          expect(await newLexProjectPageMember.namePage.projectCodeInput.inputValue()).toEqual('changed_new_project');
+          await newLexProjectPageMember.expectFormStatusHasNoError();
+        });
+
+        test('Project code cannot be empty; does not show an error but is still invalid', async () => {
+          await newLexProjectPageMember.namePage.projectCodeInput.fill('');
+          await newLexProjectPageMember.namePage.projectCodeInput.press('Tab'); // trigger project code check
+          await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
+          await newLexProjectPageMember.expectFormStatusHasNoError();
+          await expect(newLexProjectPageMember.nextButton).toBeEnabled();
+          await newLexProjectPageMember.nextButton.click();
+          await expect(newLexProjectPageMember.namePage.projectNameInput).toBeVisible();
+          await newLexProjectPageMember.expectFormStatusHasError();
+          await expect(newLexProjectPageMember.formStatus).toContainText('Project Code cannot be empty.');
+        });
+
+        test('Project code can be one character', async () => {
+          await newLexProjectPageMember.namePage.editProjectCodeCheckbox.check();
+          await newLexProjectPageMember.namePage.projectCodeInput.fill('a');
+          await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
+          await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeOk).toBeVisible();
+          await newLexProjectPageMember.expectFormStatusHasNoError();
+        });
+
+        test('Project code cannot be uppercase', async () => {
+          await newLexProjectPageMember.namePage.projectCodeInput.fill('A');
+          await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
+          await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
+          await newLexProjectPageMember.expectFormStatusHasNoError();
+          await newLexProjectPageMember.nextButton.click();
+          await newLexProjectPageMember.expectFormStatusHasError();
+          await expect(newLexProjectPageMember.formStatus).toContainText('Project Code must begin with a letter');
+          await newLexProjectPageMember.namePage.projectCodeInput.fill('aB');
+          await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
+          await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
+          await newLexProjectPageMember.expectFormStatusHasNoError();
+          await newLexProjectPageMember.nextButton.click();
+          await newLexProjectPageMember.expectFormStatusHasError();
+          await expect(newLexProjectPageMember.formStatus).toContainText('Project Code must begin with a letter');
+        });
+
+        test('Project code cannot start with a number', async () => {
+          await newLexProjectPageMember.namePage.projectCodeInput.fill('1');
+          await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
+          await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
+          await newLexProjectPageMember.expectFormStatusHasNoError();
+          await newLexProjectPageMember.nextButton.click();
+          await newLexProjectPageMember.expectFormStatusHasError();
+          await expect(newLexProjectPageMember.formStatus).toContainText('Project Code must begin with a letter');
+        });
+
+        test('Project code cannot use non-alphanumeric and reverts to default when Edit-project-code is disabled', async () => {
+          await newLexProjectPageMember.namePage.projectCodeInput.fill('a?');
+          await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
+          await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).toBeVisible();
+          await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
+          await newLexProjectPageMember.expectFormStatusHasNoError();
+          await newLexProjectPageMember.nextButton.click();
+          await newLexProjectPageMember.expectFormStatusHasError();
+          await expect(newLexProjectPageMember.formStatus).toContainText('Project Code must begin with a letter');
+
+          // Project code reverts to default when Edit-project-code is disabled
+          await expect(newLexProjectPageMember.namePage.editProjectCodeCheckbox).toBeVisible();
+          await newLexProjectPageMember.namePage.editProjectCodeCheckbox.uncheck();
           await expect(newLexProjectPageMember.namePage.projectCodeInput).not.toBeVisible();
+          expect(await newLexProjectPageMember.namePage.projectCodeInput.inputValue()).toEqual(newProject01.code);
+          await newLexProjectPageMember.expectFormStatusHasNoError();
         });
-
-        test.describe('Edit Project Code', () => {
-          test.beforeEach(async () => {
-            await expect(newLexProjectPageMember.namePage.editProjectCodeCheckbox).toBeVisible();
-            await newLexProjectPageMember.namePage.editProjectCodeCheckbox.check();
-          });
-
-          test('Can edit project code when enabled', async () => {
-            await expect(newLexProjectPageMember.namePage.projectCodeInput).toBeVisible();
-            await newLexProjectPageMember.namePage.projectCodeInput.fill('changed_new_project');
-            await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
-            expect(await newLexProjectPageMember.namePage.projectCodeInput.inputValue()).toEqual('changed_new_project');
-            await newLexProjectPageMember.expectFormStatusHasNoError();
-          });
-
-          test('Project code cannot be empty; does not show an error but is still invalid', async () => {
-            await newLexProjectPageMember.namePage.projectCodeInput.fill('');
-            await newLexProjectPageMember.namePage.projectCodeInput.press('Tab'); // trigger project code check
-            await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
-            await newLexProjectPageMember.expectFormStatusHasNoError();
-            await expect(newLexProjectPageMember.nextButton).toBeEnabled();
-            await newLexProjectPageMember.nextButton.click();
-            await expect(newLexProjectPageMember.namePage.projectNameInput).toBeVisible();
-            await newLexProjectPageMember.expectFormStatusHasError();
-            await expect(newLexProjectPageMember.formStatus).toContainText('Project Code cannot be empty.');
-          });
-
-          test('Project code can be one character', async () => {
-            await newLexProjectPageMember.namePage.editProjectCodeCheckbox.check();
-            await newLexProjectPageMember.namePage.projectCodeInput.fill('a');
-            await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
-            await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeOk).toBeVisible();
-            await newLexProjectPageMember.expectFormStatusHasNoError();
-          });
-
-          test('Project code cannot be uppercase', async () => {
-            await newLexProjectPageMember.namePage.projectCodeInput.fill('A');
-            await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
-            await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
-            await newLexProjectPageMember.expectFormStatusHasNoError();
-            await newLexProjectPageMember.nextButton.click();
-            await newLexProjectPageMember.expectFormStatusHasError();
-            await expect(newLexProjectPageMember.formStatus).toContainText('Project Code must begin with a letter');
-            await newLexProjectPageMember.namePage.projectCodeInput.fill('aB');
-            await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
-            await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
-            await newLexProjectPageMember.expectFormStatusHasNoError();
-            await newLexProjectPageMember.nextButton.click();
-            await newLexProjectPageMember.expectFormStatusHasError();
-            await expect(newLexProjectPageMember.formStatus).toContainText('Project Code must begin with a letter');
-          });
-
-          test('Project code cannot start with a number', async () => {
-            await newLexProjectPageMember.namePage.projectCodeInput.fill('1');
-            await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
-            await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
-            await newLexProjectPageMember.expectFormStatusHasNoError();
-            await newLexProjectPageMember.nextButton.click();
-            await newLexProjectPageMember.expectFormStatusHasError();
-            await expect(newLexProjectPageMember.formStatus).toContainText('Project Code must begin with a letter');
-          });
-
-          test('Project code cannot use non-alphanumeric and reverts to default when Edit-project-code is disabled', async () => {
-            await newLexProjectPageMember.namePage.projectCodeInput.fill('a?');
-            await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
-            await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).toBeVisible();
-            await expect(newLexProjectPageMember.namePage.projectCodeOk).not.toBeVisible();
-            await newLexProjectPageMember.expectFormStatusHasNoError();
-            await newLexProjectPageMember.nextButton.click();
-            await newLexProjectPageMember.expectFormStatusHasError();
-            await expect(newLexProjectPageMember.formStatus).toContainText('Project Code must begin with a letter');
-
-            // Project code reverts to default when Edit-project-code is disabled
-            await expect(newLexProjectPageMember.namePage.editProjectCodeCheckbox).toBeVisible();
-            await newLexProjectPageMember.namePage.editProjectCodeCheckbox.uncheck();
-            await expect(newLexProjectPageMember.namePage.projectCodeInput).not.toBeVisible();
-            expect(await newLexProjectPageMember.namePage.projectCodeInput.inputValue()).toEqual(newProject01.code);
-            await newLexProjectPageMember.expectFormStatusHasNoError();
-          });
-        });
-
-      });
-
-      test('Can create project', async () => {
-        // await newLexProjectPageMember.namePage.projectNameInput.fill(newProject01.name);
-        await newLexProjectPageMember.namePage.projectNameInput.fill('otherish');
-        await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
-        await expect(newLexProjectPageMember.nextButton).toBeEnabled();
-        // TODO: understand why the following line causes test failure
-        // await newLexProjectPageMember.expectFormIsValid();
-        await newLexProjectPageMember.nextButton.click();
-        await expect(newLexProjectPageMember.namePage.projectNameInput).not.toBeVisible();
-        await expect(newLexProjectPageMember.initialDataPageBrowseButton).toBeVisible();
-        await newLexProjectPageMember.expectFormStatusHasNoError();
-
-        // --------------------------------------------------------
-        // Initial Data page with upload
-        // -- cannot see back button and defaults to uploading data
-        await expect(newLexProjectPageMember.backButton).not.toBeVisible();
-        await expect(newLexProjectPageMember.initialDataPageBrowseButton).toBeVisible();
-        await expect(newLexProjectPageMember.progressIndicatorStep3Label).toHaveText('Verify');
-        await newLexProjectPageMember.expectFormIsNotValid();
-        await newLexProjectPageMember.expectFormStatusHasNoError();
-
-        // -------------------
-        // -- Mock file upload
-        // ------cannot upload large file
-        // ______ ! the mockupload will be replaced by a proper upload!
-        // const mockUploadElement = new MockUploadElement(newLexProjectPageMember.page);
-        // await mockUploadElement.enableButton.click();
-        // await expect(mockUploadElement.fileNameInput).toBeVisible();
-        // await mockUploadElement.fileNameInput.fill(constants.testMockZipImportFile.name);
-        // await mockUploadElement.fileSizeInput.fill('134217728');
-        await newLexProjectPageMember.page.pause();
-        await newLexProjectPageMember.initialDataPageBrowseButton.click();
-        // // Can upload audio file
-        const [fileChooser2] = await Promise.all([
-          newLexProjectPageMember.page.waitForEvent('filechooser'),
-          newLexProjectPageMember.initialDataPageBrowseButton.click(),
-        ]);
-        await fileChooser2.setFiles('test/e2e/shared-files/' + constants.testMockMp3UploadFile.name);
-        // expect(noticeElement.notice).toHaveCount(1);
-        // await expect(noticeElement.notice).toBeVisible();
-        // await expect(noticeElement.notice).toContainText('File uploaded successfully');
-
-        // expect<any>(await page.noticeList.count()).toBe(0);
-        // await page.initialDataPage.mockUpload.uploadButton.click();
-        // expect<any>(await page.initialDataPage.browseButton.isDisplayed()).toBe(true);
-        // expect<any>(await page.verifyDataPage.entriesImported.isPresent()).toBe(false);
-        // expect<any>(await page.noticeList.count()).toBe(1);
-        // expect<any>(await page.noticeList.get(0).getText()).toContain('is too large. It must be smaller than');
-        // await page.formStatus.expectHasNoError();
-        // await page.initialDataPage.mockUpload.fileNameInput.clear();
-        // await page.initialDataPage.mockUpload.fileSizeInput.clear();
-        // await page.firstNoticeCloseButton.click();
-      });
-
-      /*
-    });
-
-    test.describe('Initial Data page with upload', () => {
-
-      test('cannot see back button and defaults to uploading data', async () => {
-        expect<any>(await page.backButton.isDisplayed()).toBe(false);
-        expect<any>(await page.initialDataPage.browseButton.isDisplayed()).toBe(true);
-        expect<any>(await page.progressIndicatorStep3Label.getText()).toEqual('Verify');
-        await page.expectFormIsNotValid();
-        await page.formStatus.expectHasNoError();
-      });
-
-      test.describe('Mock file upload', () => {
-
-        test('cannot upload large file', async () => {
-          await page.initialDataPage.mockUpload.enableButton.click();
-          expect<any>(await page.initialDataPage.mockUpload.fileNameInput.isPresent()).toBe(true);
-          expect<any>(await page.initialDataPage.mockUpload.fileNameInput.isDisplayed()).toBe(true);
-          await page.initialDataPage.mockUpload.fileNameInput.sendKeys(constants.testMockZipImportFile.name);
-          await page.initialDataPage.mockUpload.fileSizeInput.sendKeys(134217728);
-          expect<any>(await page.noticeList.count()).toBe(0);
-          await page.initialDataPage.mockUpload.uploadButton.click();
-          expect<any>(await page.initialDataPage.browseButton.isDisplayed()).toBe(true);
-          expect<any>(await page.verifyDataPage.entriesImported.isPresent()).toBe(false);
-          expect<any>(await page.noticeList.count()).toBe(1);
-          expect<any>(await page.noticeList.get(0).getText()).toContain('is too large. It must be smaller than');
-          await page.formStatus.expectHasNoError();
-          await page.initialDataPage.mockUpload.fileNameInput.clear();
-          await page.initialDataPage.mockUpload.fileSizeInput.clear();
-          await page.firstNoticeCloseButton.click();
-        });
-
-        test('cannot upload jpg', async () => {
-          await page.initialDataPage.mockUpload.fileNameInput.sendKeys(constants.testMockJpgImportFile.name);
-          await page.initialDataPage.mockUpload.fileSizeInput.sendKeys(constants.testMockJpgImportFile.size);
-          expect<any>(await page.noticeList.count()).toBe(0);
-          await page.initialDataPage.mockUpload.uploadButton.click();
-          expect<any>(await page.initialDataPage.browseButton.isDisplayed()).toBe(true);
-          expect<any>(await page.verifyDataPage.entriesImported.isPresent()).toBe(false);
-          expect<any>(await page.noticeList.count()).toBe(1);
-          expect(await page.noticeList.get(0).getText()).toContain(constants.testMockJpgImportFile.name +
-            ' is not an allowed compressed file. Ensure the file is');
-          await page.formStatus.expectHasNoError();
-          await page.initialDataPage.mockUpload.fileNameInput.clear();
-          await page.initialDataPage.mockUpload.fileSizeInput.clear();
-          await page.firstNoticeCloseButton.click();
-        });
-
-        test('can upload zip file', async () => {
-          await page.initialDataPage.mockUpload.fileNameInput.sendKeys(constants.testMockZipImportFile.name);
-          await page.initialDataPage.mockUpload.fileSizeInput.sendKeys(constants.testMockZipImportFile.size);
-          expect<any>(await page.noticeList.count()).toBe(0);
-          await page.initialDataPage.mockUpload.uploadButton.click();
-          expect<any>(await page.verifyDataPage.entriesImported.isDisplayed()).toBe(true);
-          expect<any>(await page.noticeList.count()).toBe(1);
-          expect(await page.noticeList.get(0).getText()).toContain('Successfully imported ' +
-            constants.testMockZipImportFile.name);
-          await page.formStatus.expectHasNoError();
-        });
-
       });
 
     });
 
-    test.describe('Verify Data await page', () => {
+    test('Can create project', async ({ memberTab }) => {
+      await newLexProjectPageMember.namePage.projectNameInput.fill(newProject01.name);
+      await newLexProjectPageMember.namePage.projectNameInput.press('Tab'); // trigger project code check
+      await expect(newLexProjectPageMember.nextButton).toBeEnabled();
+      // TODO: understand why the following line causes test failure
+      // await newLexProjectPageMember.expectFormIsValid();
+      await newLexProjectPageMember.nextButton.click();
+      await expect(newLexProjectPageMember.namePage.projectNameInput).not.toBeVisible();
+      await expect(newLexProjectPageMember.initialDataPageBrowseButton).toBeVisible();
+      await newLexProjectPageMember.expectFormStatusHasNoError();
 
-      test('displays stats', async () => {
-        expect<any>(await page.verifyDataPage.title.getText()).toEqual('Verify Data');
-        expect<any>(await page.verifyDataPage.entriesImported.getText()).toEqual('2');
-        await page.formStatus.expectHasNoError();
-      });
+      // --------------------------------------------------------
+      // -----------------------------
+      // Initial Data page with upload
+      // -- cannot see back button and defaults to uploading data
+      await expect(newLexProjectPageMember.backButton).not.toBeVisible();
+      await expect(newLexProjectPageMember.initialDataPageBrowseButton).toBeVisible();
+      await expect(newLexProjectPageMember.progressIndicatorStep3Label).toHaveText('Verify');
+      await newLexProjectPageMember.expectFormIsNotValid();
+      await newLexProjectPageMember.expectFormStatusHasNoError();
+
+      // -------------------
+      // -- Mock file upload
+      // ------cannot upload large file----------------------------------------------------------------
+      // ______ ! the mockupload will be replaced by a proper upload!
+      // const mockUploadElement = new MockUploadElement(newLexProjectPageMember.page);
+      // await mockUploadElement.enableButton.click();
+      // await expect(mockUploadElement.fileNameInput).toBeVisible();
+      // await mockUploadElement.fileNameInput.fill(constants.testMockZipImportFile.name);
+      // await mockUploadElement.fileSizeInput.fill('134217728');
+      const noticeElement = new NoticeElement(newLexProjectPageMember.page);
+      const [fileChooser] = await Promise.all([
+        newLexProjectPageMember.page.waitForEvent('filechooser'),
+        newLexProjectPageMember.initialDataPageBrowseButton.click(),
+      ]);
+      expect(noticeElement.notice).toHaveCount(0);
+      // TODO: consider putting the name of this file in testConstants
+      const dummyLargeFileName: string = 'dummy_large_file.zip';
+      await fileChooser.setFiles('test/e2e/shared-files/' + dummyLargeFileName);
+      await expect(newLexProjectPageMember.initialDataPageBrowseButton).toBeVisible();
+      await expect(newLexProjectPageMember.verifyDataPage.entriesImported).not.toBeVisible();
+      await expect(noticeElement.notice).toBeVisible();
+      expect(noticeElement.notice).toHaveCount(1);
+      await expect(noticeElement.notice).toContainText('is too large. It must be smaller than');
+      await newLexProjectPageMember.expectFormStatusHasNoError();
+      await noticeElement.closeButton.click();
+
+      // ------cannot upload jpg   -------------------------------------------------------------------
+      const [fileChooser2] = await Promise.all([
+        newLexProjectPageMember.page.waitForEvent('filechooser'),
+        newLexProjectPageMember.initialDataPageBrowseButton.click(),
+      ]);
+      expect(noticeElement.notice).toHaveCount(0);
+      const jpgFileName: string = 'FriedRiceWithPork.jpg'
+      await fileChooser2.setFiles('test/e2e/shared-files/' + jpgFileName);
+      await expect(noticeElement.notice).toBeVisible();
+      expect(noticeElement.notice).toHaveCount(1);
+      await expect(noticeElement.notice).toContainText(jpgFileName + ' is not an allowed compressed file. Ensure the file is');
+      await expect(newLexProjectPageMember.initialDataPageBrowseButton).toBeVisible();
+      await expect(newLexProjectPageMember.verifyDataPage.entriesImported).not.toBeVisible();
+      await newLexProjectPageMember.expectFormStatusHasNoError();
+      await noticeElement.closeButton.click();
+
+      // ------can upload zip file  -------------------------------------------------------------------
+      const [fileChooser3] = await Promise.all([
+        newLexProjectPageMember.page.waitForEvent('filechooser'),
+        newLexProjectPageMember.initialDataPageBrowseButton.click(),
+      ]);
+      expect(noticeElement.notice).toHaveCount(0);
+      // TODO: potentially add another test testing for invalid zip file, notice text "Import failed. Status: 400 Bad Request- [object Object]"
+      // const dummySmallFileName: string = 'dummy_small_file.zip';
+      const testLexProjectFileName: string = 'TestLexProject.zip';
+      const numberOfEntriesInTestLexProjectFile: number = 2;
+      await fileChooser3.setFiles('test/e2e/shared-files/' + testLexProjectFileName);
+      await expect(newLexProjectPageMember.verifyDataPage.entriesImported).toBeVisible();
+      expect(noticeElement.notice).toHaveCount(1);
+      await expect(noticeElement.notice).toContainText('Successfully imported ' + testLexProjectFileName);
+      await newLexProjectPageMember.expectFormStatusHasNoError();
+
+      // --------------------------------------------------------
+      // Verify Data await page
+      // ----------------------
+      // -------------- displays stats -------------------------------------------------
+      await expect(newLexProjectPageMember.verifyDataPage.title).toHaveText(/Verify Data/);
+      await expect(newLexProjectPageMember.verifyDataPage.entriesImported).toHaveText(numberOfEntriesInTestLexProjectFile.toString());
+      await newLexProjectPageMember.expectFormStatusHasNoError();
 
       // regression avoidance test - should not redirect when button is clicked
-      test('displays non-critical errors', async () => {
-        expect<any>(await page.verifyDataPage.importErrors.isPresent()).toBe(true);
-        expect<any>(await page.verifyDataPage.importErrors.isDisplayed()).toBe(false);
-        await page.verifyDataPage.nonCriticalErrorsButton.click();
-        expect<any>(await page.verifyDataPage.title.getText()).toEqual('Verify Data');
-        await page.formStatus.expectHasNoError();
-        expect<any>(await page.verifyDataPage.importErrors.isDisplayed()).toBe(true);
-        expect(await page.verifyDataPage.importErrors.getText())
-          .toContain('range file \'TestProj.lift-ranges\' was not found');
-        await page.verifyDataPage.nonCriticalErrorsButton.click();
-        await browser.wait(ExpectedConditions.invisibilityOf(page.verifyDataPage.importErrors), constants.conditionTimeout);
-        expect<any>(await page.verifyDataPage.importErrors.isDisplayed()).toBe(false);
-      });
+      // -------------- displays non-critical errors ------------------------------------
+      // .not.tobeVisible() is the same as .toBeHidden() - fulfil the expectation even if elements does not exist
+      // to check if element exists in the DOM but is not visible, do: .toHaveCount(1) .not.toBeVisible()
+      await expect(newLexProjectPageMember.verifyDataPage.importErrors).toHaveCount(1);
+      await expect(newLexProjectPageMember.verifyDataPage.importErrors).not.toBeVisible();
+      await newLexProjectPageMember.verifyDataPage.nonCriticalErrorsButton.click();
+      await expect(newLexProjectPageMember.verifyDataPage.title).toHaveText(/Verify Data/);
+      await newLexProjectPageMember.expectFormStatusHasNoError();
+      await expect(newLexProjectPageMember.verifyDataPage.importErrors).toBeVisible();
+      await expect(newLexProjectPageMember.verifyDataPage.importErrors).toContainText('range file \'TestProj.lift-ranges\' was not found');
+      await newLexProjectPageMember.verifyDataPage.nonCriticalErrorsButton.click();
+      await expect(newLexProjectPageMember.verifyDataPage.importErrors).not.toBeVisible();
 
-      test('can go to lexicon', async () => {
-        expect<any>(await page.nextButton.isDisplayed()).toBe(true);
-        expect<any>(await page.nextButton.isEnabled()).toBe(true);
-        await page.expectFormIsValid();
-        await page.nextButton.click();
-        expect<any>(editorPage.browse.getEntryCount()).toBe(2);
-      });
 
+      // ------------- can go to lexicon -------------------------------------------------
+      await expect(newLexProjectPageMember.nextButton).toBeVisible();
+      await newLexProjectPageMember.expectFormIsValid();
+      await newLexProjectPageMember.page.pause();
+      await newLexProjectPageMember.nextButton.click();
+      await newLexProjectPageMember.page.waitForURL(/editor\/entry/);
+      const myRe = /(?<=(.*app\/lexicon\/))(.*)(?=(#!\/editor\/entry\/.*))/;
+      newProject01.id = myRe.exec(newLexProjectPageMember.page.url())[0];
+      const entriesListPage: EntriesListPage = new EntriesListPage(newLexProjectPageMember.page, newProject01.id);
+      await entriesListPage.expectTotalNumberOfEntries(numberOfEntriesInTestLexProjectFile);
     });
 
-    test.describe('New Empty Project Name page', () => {
 
-      test('create: new empty project', async () => {
-        await NewLexProjectPage.get();
-        await page.chooserPage.createButton.click();
-        await page.namePage.projectNameInput.sendKeys(constants.emptyProjectName + Key.TAB);
-        await browser.wait(ExpectedConditions.visibilityOf(page.namePage.projectCodeOk), constants.conditionTimeout);
-        expect<any>(await page.namePage.projectCodeExists.isPresent()).toBe(false);
-        expect<any>(await page.namePage.projectCodeAlphanumeric.isPresent()).toBe(false);
-        expect<any>(await page.namePage.projectCodeOk.isDisplayed()).toBe(true);
-        expect<any>(await page.nextButton.isEnabled()).toBe(true);
+  });
+  /*
+      test.describe('Initial Data page with upload', () => {
 
-        // added sleep to ensure state is stable so the next test passes (expectFormIsNotValid)
-        await browser.sleep(500);
-        await page.nextButton.click();
-        expect<any>(await page.namePage.projectNameInput.isPresent()).toBe(false);
-        expect<any>(await page.initialDataPage.browseButton.isPresent()).toBe(true);
-      });
-
-    });
-
-    test.describe('Initial Data page skipping upload', () => {
-
-      test('can skip uploading data', async () => {
-        expect<any>(await page.nextButton.isEnabled()).toBe(true);
-        await page.expectFormIsNotValid();
-        await page.nextButton.click();
-        expect<any>(await page.primaryLanguagePage.selectButton.isPresent()).toBe(true);
-      });
-
-    });
-
-    test.describe('Primary Language page', () => {
-
-      test('can go back to initial data page (then forward again)', async () => {
-        expect<any>(await page.backButton.isDisplayed()).toBe(true);
-        expect<any>(await page.backButton.isEnabled()).toBe(true);
-        await page.backButton.click();
-        expect<any>(await page.initialDataPage.browseButton.isDisplayed()).toBe(true);
-        expect<any>(await page.nextButton.isEnabled()).toBe(true);
-        await page.expectFormIsNotValid();
-        await page.nextButton.click();
-        expect<any>(await page.primaryLanguagePage.selectButton.isPresent()).toBe(true);
-        expect<any>(await page.backButton.isDisplayed()).toBe(true);
-      });
-
-      test('cannot move on if language is not selected', async () => {
-        expect<any>(await page.nextButton.isEnabled()).toBe(true);
-        await page.expectFormIsNotValid();
-        await page.nextButton.click();
-        expect<any>(await page.primaryLanguagePage.selectButton.isPresent()).toBe(true);
-        await page.formStatus.expectContainsError('Please select a primary language for the project.');
-      });
-
-      test('can select language', async () => {
-        expect<any>(await page.primaryLanguagePage.selectButton.isEnabled()).toBe(true);
-        await page.primaryLanguagePage.selectButtonClick();
-        expect<any>(await page.modal.selectLanguage.searchLanguageInput.isPresent()).toBe(true);
-      });
-
-      test.describe('Select Language modal', () => {
-
-        test('can search, select and add language', async () => {
-          await page.modal.selectLanguage.searchLanguageInput.sendKeys(constants.searchLanguage + Key.ENTER);
-          expect<any>(await page.modal.selectLanguage.languageRows.first().isPresent()).toBe(true);
-
-          expect<any>(await page.modal.selectLanguage.addButton.isPresent()).toBe(true);
-          expect<any>(await page.modal.selectLanguage.addButton.isEnabled()).toBe(false);
-          await page.modal.selectLanguage.languageRows.first().click();
-          expect<any>(await page.modal.selectLanguage.addButton.isEnabled()).toBe(true);
-          expect<any>(await page.modal.selectLanguage.addButton.getText()).toEqual('Add ' + constants.foundLanguage);
-
-          await page.modal.selectLanguage.addButton.click();
-          await browser.wait(ExpectedConditions.stalenessOf(page.modal.selectLanguage.searchLanguageInput),
-            constants.conditionTimeout);
-          expect<any>(await page.modal.selectLanguage.searchLanguageInput.isPresent()).toBe(false);
+        test('cannot see back button and defaults to uploading data', async () => {
+          expect<any>(await page.backButton.isDisplayed()).toBe(false);
+          expect<any>(await page.initialDataPage.browseButton.isDisplayed()).toBe(true);
+          expect<any>(await page.progressIndicatorStep3Label.getText()).toEqual('Verify');
+          await page.expectFormIsNotValid();
+          await page.formStatus.expectHasNoError();
         });
-        */
+
+        test.describe('Mock file upload', () => {
+
+          test('cannot upload large file', async () => {
+            await page.initialDataPage.mockUpload.enableButton.click();
+            expect<any>(await page.initialDataPage.mockUpload.fileNameInput.isPresent()).toBe(true);
+            expect<any>(await page.initialDataPage.mockUpload.fileNameInput.isDisplayed()).toBe(true);
+            await page.initialDataPage.mockUpload.fileNameInput.sendKeys(constants.testMockZipImportFile.name);
+            await page.initialDataPage.mockUpload.fileSizeInput.sendKeys(134217728);
+            expect<any>(await page.noticeList.count()).toBe(0);
+            await page.initialDataPage.mockUpload.uploadButton.click();
+            expect<any>(await page.initialDataPage.browseButton.isDisplayed()).toBe(true);
+            expect<any>(await page.verifyDataPage.entriesImported.isPresent()).toBe(false);
+            expect<any>(await page.noticeList.count()).toBe(1);
+            expect<any>(await page.noticeList.get(0).getText()).toContain('is too large. It must be smaller than');
+            await page.formStatus.expectHasNoError();
+            await page.initialDataPage.mockUpload.fileNameInput.clear();
+            await page.initialDataPage.mockUpload.fileSizeInput.clear();
+            await page.firstNoticeCloseButton.click();
+          });
+
+          test('cannot upload jpg', async () => {
+            await page.initialDataPage.mockUpload.fileNameInput.sendKeys(constants.testMockJpgImportFile.name);
+            await page.initialDataPage.mockUpload.fileSizeInput.sendKeys(constants.testMockJpgImportFile.size);
+            expect<any>(await page.noticeList.count()).toBe(0);
+            await page.initialDataPage.mockUpload.uploadButton.click();
+            expect<any>(await page.initialDataPage.browseButton.isDisplayed()).toBe(true);
+            expect<any>(await page.verifyDataPage.entriesImported.isPresent()).toBe(false);
+            expect<any>(await page.noticeList.count()).toBe(1);
+            expect(await page.noticeList.get(0).getText()).toContain(constants.testMockJpgImportFile.name +
+              ' is not an allowed compressed file. Ensure the file is');
+            await page.formStatus.expectHasNoError();
+            await page.initialDataPage.mockUpload.fileNameInput.clear();
+            await page.initialDataPage.mockUpload.fileSizeInput.clear();
+            await page.firstNoticeCloseButton.click();
+          });
+
+          test('can upload zip file', async () => {
+            await page.initialDataPage.mockUpload.fileNameInput.sendKeys(constants.testMockZipImportFile.name);
+            await page.initialDataPage.mockUpload.fileSizeInput.sendKeys(constants.testMockZipImportFile.size);
+            expect<any>(await page.noticeList.count()).toBe(0);
+            await page.initialDataPage.mockUpload.uploadButton.click();
+            expect<any>(await page.verifyDataPage.entriesImported.isDisplayed()).toBe(true);
+            expect<any>(await page.noticeList.count()).toBe(1);
+            expect(await page.noticeList.get(0).getText()).toContain('Successfully imported ' +
+              constants.testMockZipImportFile.name);
+            await page.formStatus.expectHasNoError();
+          });
+
+        });
+
+      });
+  */
+  /*
+      test.describe('Verify Data await page', () => {
+
+        test('displays stats', async () => {
+          expect<any>(await page.verifyDataPage.title.getText()).toEqual('Verify Data');
+          expect<any>(await page.verifyDataPage.entriesImported.getText()).toEqual('2');
+          await page.formStatus.expectHasNoError();
+        });
+
+        // regression avoidance test - should not redirect when button is clicked
+        test('displays non-critical errors', async () => {
+          expect<any>(await page.verifyDataPage.importErrors.isPresent()).toBe(true);
+          expect<any>(await page.verifyDataPage.importErrors.isDisplayed()).toBe(false);
+          await page.verifyDataPage.nonCriticalErrorsButton.click();
+          expect<any>(await page.verifyDataPage.title.getText()).toEqual('Verify Data');
+          await page.formStatus.expectHasNoError();
+          expect<any>(await page.verifyDataPage.importErrors.isDisplayed()).toBe(true);
+          expect(await page.verifyDataPage.importErrors.getText())
+            .toContain('range file \'TestProj.lift-ranges\' was not found');
+          await page.verifyDataPage.nonCriticalErrorsButton.click();
+          await browser.wait(ExpectedConditions.invisibilityOf(page.verifyDataPage.importErrors), constants.conditionTimeout);
+          expect<any>(await page.verifyDataPage.importErrors.isDisplayed()).toBe(false);
+        });
+
+        test('can go to lexicon', async () => {
+          expect<any>(await page.nextButton.isDisplayed()).toBe(true);
+          expect<any>(await page.nextButton.isEnabled()).toBe(true);
+          await page.expectFormIsValid();
+          await page.nextButton.click();
+          expect<any>(editorPage.browse.getEntryCount()).toBe(2);
+        });
+
+      });
+*/
+  test('Create: new empty project & can skip uploading data', async () => {
+    await newLexProjectPageMember.goto();
+    await newLexProjectPageMember.chooserPage.createButton.click();
+    await newLexProjectPageMember.namePage.projectNameInput.fill(newProject02.name + 'iji');
+    await newLexProjectPageMember.namePage.projectNameInput.press('Tab');
+    await expect(newLexProjectPageMember.namePage.projectCodeExists).not.toBeVisible();
+    await expect(newLexProjectPageMember.namePage.projectCodeAlphanumeric).not.toBeVisible();
+    await expect(newLexProjectPageMember.namePage.projectCodeOk).toBeVisible();
+    await expect(newLexProjectPageMember.nextButton).toBeEnabled();
+    await newLexProjectPageMember.nextButton.click();
+    await expect(newLexProjectPageMember.namePage.projectNameInput).not.toBeVisible();
+    await expect(newLexProjectPageMember.initialDataPageBrowseButton).toBeVisible();
+
+    // can skip uploading data
+    await expect(newLexProjectPageMember.nextButton).toBeEnabled();
+    await newLexProjectPageMember.expectFormIsNotValid();
+    await newLexProjectPageMember.nextButton.click();
+    await expect(newLexProjectPageMember.primaryLanguagePageSelectButton).toBeVisible();
+  });
+
+
+  test.describe('Primary Language page', () => {
+    test.beforeEach(async ({ }, testInfo) => {
+      await newLexProjectPageMember.goto();
+      await newLexProjectPageMember.chooserPage.createButton.click();
+
+      // a new project is created for every test in this describe block so that the tests are independent from each other
+      // the alternative would have been to merge all tests into one large test
+      // the projects need to have different names (as project names need to be unique in the database) and where therefore created by adding
+      // the number of the line in which the test starts; execute the following line for clarification
+      // console.log(testInfo.line);
+      await newLexProjectPageMember.namePage.projectNameInput.fill('lexicon-new-project_spec_ts project for line ' + testInfo.line.toString());
+      await newLexProjectPageMember.nextButton.click();
+      await newLexProjectPageMember.nextButton.click();
     });
+
+    test.skip('Can go back to initial data page (then forward again)', async () => {
+      await expect(newLexProjectPageMember.backButton).toBeVisible();
+      await expect(newLexProjectPageMember.backButton).toBeEnabled();
+      // TODO: find out why the following line is flaky
+      await newLexProjectPageMember.backButton.click();
+      await expect(newLexProjectPageMember.initialDataPageBrowseButton).toBeVisible();
+      await expect(newLexProjectPageMember.nextButton).toBeEnabled();
+      await newLexProjectPageMember.expectFormIsNotValid();
+      await newLexProjectPageMember.nextButton.click();
+      await expect(newLexProjectPageMember.primaryLanguagePageSelectButton).toBeVisible();
+      await expect(newLexProjectPageMember.backButton).toBeVisible();
+    });
+
+    test('Cannot move on if language is not selected', async () => {
+      await newLexProjectPageMember.nextButton.click();
+      await expect(newLexProjectPageMember.nextButton).toBeEnabled();
+      await newLexProjectPageMember.expectFormIsNotValid();
+      await newLexProjectPageMember.nextButton.click();
+      await expect(newLexProjectPageMember.primaryLanguagePageSelectButton).toBeVisible();
+      await newLexProjectPageMember.expectFormStatusHasError();
+      await expect(newLexProjectPageMember.formStatus).toContainText('Please select a primary language for the project.');
+    });
+
+    test('Can search, select and add language', async () => {
+      await newLexProjectPageMember.nextButton.click();
+      await expect(newLexProjectPageMember.primaryLanguagePageSelectButton).toBeEnabled();
+      await newLexProjectPageMember.primaryLanguagePageSelectButton.click();
+      await expect(newLexProjectPageMember.selectLanguage.searchLanguageInput).toBeVisible();
+      await newLexProjectPageMember.selectLanguage.searchLanguageInput.fill(constants.searchLanguage);
+      await newLexProjectPageMember.selectLanguage.searchLanguageInput.press('Enter');
+      await expect(newLexProjectPageMember.selectLanguage.languageRows.first()).toBeVisible();
+
+      await expect(newLexProjectPageMember.selectLanguage.addButton).toBeVisible();
+      await expect(newLexProjectPageMember.selectLanguage.addButton).not.toBeEnabled();
+      await newLexProjectPageMember.selectLanguage.languageRows.first().click();
+      await expect(newLexProjectPageMember.selectLanguage.addButton).toBeEnabled();
+      await expect(newLexProjectPageMember.selectLanguage.addButton).toHaveText('Add ' + constants.foundLanguage);
+      await newLexProjectPageMember.selectLanguage.addButton.click();
+      await expect(newLexProjectPageMember.selectLanguage.searchLanguageInput).not.toBeVisible();
+    });
+
   });
 });

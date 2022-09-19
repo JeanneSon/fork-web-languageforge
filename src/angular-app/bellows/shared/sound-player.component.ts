@@ -30,7 +30,7 @@ export class SoundController implements angular.IController {
 
     this.audioElement.addEventListener('durationchange', () => {
       this.$scope.$digest();
-      console.log("audio durationchange; audio duration: " + this.duration());
+      console.log("audio durationchange; audio duration: " + this.audioElement.duration);
     });
 
     const previousFormattedTime: string = null;
@@ -54,6 +54,10 @@ export class SoundController implements angular.IController {
     this.slider.addEventListener('input', () => {
       this.isUserMovingSlider = true;
     });
+
+    // this.audioElement.addEventListener('ended', () => {
+
+    // });
 
   }
 

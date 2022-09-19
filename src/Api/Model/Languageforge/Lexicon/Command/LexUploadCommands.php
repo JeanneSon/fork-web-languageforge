@@ -80,9 +80,7 @@ class LexUploadCommands
         );
 
         $response = new UploadResponse();
-        console.log("fileType: " + $fileType);
-        console.log("fileExt: " + $fileExtension);
-        
+
         if (in_array(strtolower($fileType), $allowedTypes) && in_array(strtolower($fileExt), $allowedExtensions)) {
 
             // make the folders if they don't exist

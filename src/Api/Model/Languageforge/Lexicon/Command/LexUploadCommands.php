@@ -88,10 +88,11 @@ class LexUploadCommands
             $project->createAssetsFolders();
             $folderPath = $project->getAudioFolderPath();
 
-            // convert audio file to mp3 or wav format if necessary
+            // convert audio file to mp3 or wav format if necessary //LHM
             // FLEx only supports mp3 or wav format as of 2022-09
-              /**
-             * https://stackoverflow.com/a/7135484/470749
+
+            /* First, find duration of audio file
+             * Source ~ https://stackoverflow.com/a/7135484/470749
              * @param string $path
              * @return int
              */
@@ -102,9 +103,7 @@ class LexUploadCommands
                 $totalSeconds = (intval($hours) * 3600) + (intval($minutes) * 60) + intval($seconds);
                 return ($totalSeconds * 1000) + intval($milli);
             }
-
             /**
-             *
              * @param string $path
              * @return string
              */
@@ -113,6 +112,8 @@ class LexUploadCommands
                 return shell_exec($cmd);
             }
 
+            // Convert to .wav if the result will be less than 1 MB (shorter than 6.25 seconds)
+            // and .mp3 otherwise (longer than 6.25 seconds)
             if(getDurationOfOggInMs($tmpFilePath) < 6250){
                 shell_exec('ffmpeg -i ' . $tmpFilePath . ' ' . trim($tmpFilePath, '.ogg') . '.wav');
                 shell_exec('mv ' . $tmpFilePath . ' ' . trim($tmpFilePath, '.ogg') . '.wav');
@@ -125,7 +126,6 @@ class LexUploadCommands
                 $fileName = trim($fileName, '.ogg') . '.mp3';
                 $tmpFilePath = trim($tmpFilePath, '.ogg') . '.mp3';
             }
-
 
 
             // move uploaded file from tmp location to assets

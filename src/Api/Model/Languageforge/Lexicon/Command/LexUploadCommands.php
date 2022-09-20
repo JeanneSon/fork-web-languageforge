@@ -18,6 +18,7 @@ class LexUploadCommands
         ".lift"
     );
 
+
     /**
      * Upload an audio file
      *
@@ -86,6 +87,46 @@ class LexUploadCommands
             // make the folders if they don't exist
             $project->createAssetsFolders();
             $folderPath = $project->getAudioFolderPath();
+
+            // convert audio file to mp3 or wav format if necessary
+            // FLEx only supports mp3 or wav format as of 2022-09
+              /**
+             * https://stackoverflow.com/a/7135484/470749
+             * @param string $path
+             * @return int
+             */
+            function getDurationOfOggInMs($path) {
+                $time = getDurationOfOgg($path);
+                list($hms, $milli) = explode('.', $time);
+                list($hours, $minutes, $seconds) = explode(':', $hms);
+                $totalSeconds = (intval($hours) * 3600) + (intval($minutes) * 60) + intval($seconds);
+                return ($totalSeconds * 1000) + intval($milli);
+            }
+
+            /**
+             *
+             * @param string $path
+             * @return string
+             */
+            function getDurationOfOgg($path) {
+                $cmd = "ffmpeg -i " . escapeshellarg($path) . " 2>&1 | grep 'Duration' | cut -d ' ' -f 4 | sed s/,//";
+                return shell_exec($cmd);
+            }
+
+            if(getDurationOfOggInMs($tmpFilePath) < 6250){
+                shell_exec('ffmpeg -i ' . $tmpFilePath . ' ' . trim($tmpFilePath, '.ogg') . '.wav');
+                shell_exec('mv ' . $tmpFilePath . ' ' . trim($tmpFilePath, '.ogg') . '.wav');
+                $fileName = trim($fileName, '.ogg') . '.wav';
+                $tmpFilePath = trim($tmpFilePath, '.ogg') . '.wav';
+            }
+            else{
+                shell_exec('ffmpeg -i ' . $tmpFilePath . ' ' . trim($tmpFilePath, '.ogg') . '.mp3');
+                shell_exec('mv ' . $tmpFilePath . ' ' . trim($tmpFilePath, '.ogg') . '.mp3');
+                $fileName = trim($fileName, '.ogg') . '.mp3';
+                $tmpFilePath = trim($tmpFilePath, '.ogg') . '.mp3';
+            }
+
+
 
             // move uploaded file from tmp location to assets
             $filePath = self::mediaFilePath($folderPath, $fileNamePrefix, $fileName);

@@ -77,7 +77,7 @@ test.describe('E2E Projects List app', () => {
       await addUserToProject(request, project4.code, member.username);
       await projectsPageMember.page.reload();
       await projectsPageMember.goto();
-      expect(await projectsPageMember.countProjects()).toBe(nProjects + 2);
+      expect(await projectsPageMember.countProjects()).toBe(nProjects + 1);
     });
   });
 

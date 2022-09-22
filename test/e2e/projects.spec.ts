@@ -93,7 +93,7 @@ test.describe('E2E Projects List app', () => {
       }
       // only project4 where admin is a member should be linked
       for (const project of [...projects, project5]) {
-        await expect(await projectsPageAdmin.projectLinkLocator(project.name)).not.toBeVisible();
+        await expect(await projectsPageAdmin.projectLinkLocator(project.name)).toBeVisible();
       }
       await expect(await projectsPageAdmin.projectLinkLocator(project4.name)).toBeVisible();
     });
